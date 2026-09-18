@@ -60,7 +60,9 @@ def load_data():
 df = load_data()
 
 
+# ==================================================
 # 데이터 미리보기
+# ==================================================
 st.subheader("데이터 미리보기")
 
 st.dataframe(
@@ -248,20 +250,6 @@ st.plotly_chart(
 
 
 # 가장 관객이 많이 몰린 구간 계산
-counts, bin_edges = pd.cut(
-    hist_df["total_audi"],
-    bins=20,
-    retbins=True,
-    include_lowest=True
-).value_counts().sort_index().values, pd.cut(
-    hist_df["total_audi"],
-    bins=20,
-    retbins=True,
-    include_lowest=True
-).categories
-
-
-# 위 계산을 단순하고 정확하게 다시 수행
 hist_bins = pd.cut(
     hist_df["total_audi"],
     bins=20,
@@ -312,9 +300,105 @@ st.text_area(
 st.divider()
 
 
+# ==================================================
+# 그래프 4. 개봉일 스크린수와 총 관객의 관계
+# ==================================================
+st.subheader("4. 개봉일 스크린수와 총 관객의 관계")
+
+scatter_df = df[
+    [
+        "movieNm",
+        "genre",
+        "openDt",
+        "first_scrn",
+        "total_audi"
+    ]
+].copy()
+
+# 필요한 데이터가 없는 행 제거
+scatter_df = scatter_df.dropna(
+    subset=[
+        "movieNm",
+        "genre",
+        "first_scrn",
+        "total_audi"
+    ]
+)
+
+# 스크린수와 총 관객이 0 이하인 데이터 제외
+scatter_df = scatter_df[
+    (scatter_df["first_scrn"] > 0)
+    & (scatter_df["total_audi"] > 0)
+]
+
+
+fig4 = px.scatter(
+    scatter_df,
+    x="first_scrn",
+    y="total_audi",
+    color="genre",
+    hover_name="movieNm",
+    hover_data={
+        "genre": True,
+        "openDt": "|%Y-%m-%d",
+        "first_scrn": ":,.0f",
+        "total_audi": ":,.0f"
+    },
+    labels={
+        "first_scrn": "개봉일 스크린수",
+        "total_audi": "총 관객",
+        "genre": "장르"
+    },
+    title="개봉일 스크린수와 총 관객의 관계"
+)
+
+
+fig4.update_traces(
+    marker=dict(
+        size=10,
+        opacity=0.75
+    ),
+    hovertemplate=(
+        "<b>%{hovertext}</b><br>"
+        "장르: %{customdata[0]}<br>"
+        "개봉일: %{customdata[1]}<br>"
+        "개봉일 스크린수: %{x:,.0f}개<br>"
+        "총 관객: %{y:,.0f}명"
+        "<extra></extra>"
+    )
+)
+
+fig4.update_layout(
+    height=650,
+    xaxis_title="개봉일 스크린수",
+    yaxis_title="총 관객",
+    legend_title_text="장르"
+)
+
+
+st.plotly_chart(
+    fig4,
+    width="stretch"
+)
+
+
+st.markdown("#### 이 그래프로 알 수 있는 것")
+
+st.text_area(
+    "내용을 직접 작성해 보세요.",
+    key="graph4_note",
+    height=100,
+    placeholder="예: 개봉일 스크린수와 총 관객 사이에 어떤 관계가 있는지 살펴볼 수 있다."
+)
+
+
+st.divider()
+
+
 # 안내
 st.info(
     "이 앱은 1년간 박스오피스 10위권에 든 영화 가운데 "
     "이 기간에 개봉한 영화들의 데이터를 이용합니다."
 )
+
 
