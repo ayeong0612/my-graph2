@@ -17,6 +17,7 @@ st.title("영화 데이터 그래프 도감 2 - 분포와 관계")
 # 데이터 불러오기
 DATA_URL = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis_movies.csv"
 
+
 @st.cache_data
 def load_data():
     df = pd.read_csv(DATA_URL)
@@ -38,13 +39,28 @@ def load_data():
         .str.strip()
     )
 
+    # 숫자형 데이터 변환
+    numeric_columns = [
+        "first_scrn",
+        "first_show",
+        "first_week_audi",
+        "total_audi",
+        "days_in_top10"
+    ]
+
+    for column in numeric_columns:
+        df[column] = pd.to_numeric(
+            df[column],
+            errors="coerce"
+        )
+
     return df
 
 
 df = load_data()
 
 
-# 데이터 확인
+# 데이터 미리보기
 st.subheader("데이터 미리보기")
 
 st.dataframe(
@@ -70,9 +86,9 @@ st.dataframe(
 st.divider()
 
 
-# --------------------------------------------------
+# ==================================================
 # 그래프 1. 장르별 영화 편수
-# --------------------------------------------------
+# ==================================================
 st.subheader("1. 장르별 영화 편수")
 
 genre_count = (
@@ -113,8 +129,9 @@ st.plotly_chart(
 )
 
 
-# 그래프 설명 작성 공간
+# 그래프 1 설명 공간
 st.markdown("#### 이 그래프로 알 수 있는 것")
+
 st.text_area(
     "내용을 직접 작성해 보세요.",
     key="graph1_note",
@@ -126,9 +143,69 @@ st.text_area(
 st.divider()
 
 
+# ==================================================
+# 그래프 2. 장르별 영화 트리맵
+# ==================================================
+st.subheader("2. 장르 안에 들어 있는 영화")
+
+# 트리맵에서 사용할 데이터
+treemap_df = df[
+    ["genre", "movieNm", "total_audi"]
+].copy()
+
+# 영화명이나 관객수가 없는 행 제거
+treemap_df = treemap_df.dropna(
+    subset=["genre", "movieNm", "total_audi"]
+)
+
+# 총 관객이 0보다 큰 영화만 사용
+treemap_df = treemap_df[
+    treemap_df["total_audi"] > 0
+]
+
+fig2 = px.treemap(
+    treemap_df,
+    path=["genre", "movieNm"],
+    values="total_audi",
+    title="장르별 영화와 총 관객"
+)
+
+fig2.update_traces(
+    hovertemplate=(
+        "<b>%{label}</b><br>"
+        "총 관객: %{value:,.0f}명"
+        "<extra></extra>"
+    )
+)
+
+fig2.update_layout(
+    height=700
+)
+
+st.plotly_chart(
+    fig2,
+    width="stretch"
+)
+
+
+# 그래프 2 설명 공간
+st.markdown("#### 이 그래프로 알 수 있는 것")
+
+st.text_area(
+    "내용을 직접 작성해 보세요.",
+    key="graph2_note",
+    height=100,
+    placeholder="예: 각 장르에 어떤 영화가 포함되어 있고, 영화별 총 관객 규모가 어떤지 알 수 있다."
+)
+
+
+st.divider()
+
+
 # 안내
 st.info(
     "이 앱은 1년간 박스오피스 10위권에 든 영화 가운데 "
     "이 기간에 개봉한 영화들의 데이터를 이용합니다."
 )
+
 
